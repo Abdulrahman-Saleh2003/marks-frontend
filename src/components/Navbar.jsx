@@ -80,15 +80,15 @@ export default function Navbar({
                 ITE Portal
               </span>
             </div>
-            <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 600 }}>
+            <div className="hide-on-mobile" style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 600 }}>
               كلية الهندسة المعلوماتية | بوابة العلامات الذكية
             </div>
           </div>
         </div>
 
-        {/* Center Nav Tabs or Locked state */}
+        {/* Center Nav Tabs or Locked state (Desktop only) */}
         {user ? (
-          <nav style={{
+          <nav className="hide-on-mobile" style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
@@ -127,7 +127,7 @@ export default function Navbar({
             })}
           </nav>
         ) : (
-          <div style={{
+          <div className="hide-on-mobile" style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -166,16 +166,17 @@ export default function Navbar({
                 justifyContent: 'center',
                 color: '#4338ca',
                 fontWeight: 800,
-                fontSize: '14px'
+                fontSize: '14px',
+                flexShrink: 0
               }}>
                 {user.full_name ? user.full_name[0] : 'U'}
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '13px', fontWeight: 800, color: '#1e293b' }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap' }}>
                   {user.full_name}
                 </div>
-                <div style={{ fontSize: '10.5px', color: '#059669', fontWeight: 700 }}>
-                  {user.linked_student_id ? `سجل جامعي: ${user.linked_student_id}` : 'حساب نشط'}
+                <div style={{ fontSize: '10.5px', color: '#059669', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                  {user.linked_student_id ? `سجل: ${user.linked_student_id}` : 'حساب نشط'}
                 </div>
               </div>
               <button
@@ -199,6 +200,26 @@ export default function Navbar({
           ) : null}
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Phone & Tablet) */}
+      {user && (
+        <nav className="mobile-bottom-nav">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+              >
+                <Icon size={20} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </header>
   );
 }

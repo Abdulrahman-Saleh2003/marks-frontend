@@ -121,19 +121,19 @@ export default function AnalyticsView({
         </div>
 
         {/* Student Lookup Input */}
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ position: 'relative' }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%', maxWidth: '520px' }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '180px' }}>
             <input
               type="text"
               placeholder="اسم الطالب (ثنائي/ثلاثي) أو رقم الجلوس..."
               value={studentInput}
               onChange={(e) => setStudentInput(e.target.value)}
               className="input-field"
-              style={{ width: '280px', paddingRight: '36px', height: '42px' }}
+              style={{ width: '100%', paddingRight: '36px', height: '42px' }}
             />
             <Search size={16} style={{ position: 'absolute', top: '13px', right: '12px', color: '#94a3b8' }} />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ padding: '10px 18px', height: '42px' }}>
+          <button type="submit" className="btn btn-primary" style={{ padding: '10px 18px', height: '42px', flexShrink: 0 }}>
             تحليل
           </button>
           {data && (
@@ -146,7 +146,8 @@ export default function AnalyticsView({
                 color: '#4338ca',
                 padding: '10px 18px',
                 height: '42px',
-                fontWeight: 700
+                fontWeight: 700,
+                flexShrink: 0
               }}
             >
               <FileDown size={16} />
