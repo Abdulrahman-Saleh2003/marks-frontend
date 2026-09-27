@@ -287,7 +287,12 @@ export default function SearchView({ onSelectStudent, setActiveTab, showToast })
                     </span>
                   ) : (
                     <span className="badge badge-green" style={{ fontSize: '11.5px', fontWeight: 800 }}>
-                      ناجح ومرفع في كافة المقررات
+                      سجل خالٍ من الرسوب
+                    </span>
+                  )}
+                  {currentStudent.unattempted_courses_count > 0 && (
+                    <span className="badge" style={{ fontSize: '11.5px', fontWeight: 700, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }}>
+                      لم يقدم {currentStudent.unattempted_courses_count} مواد
                     </span>
                   )}
                 </div>
@@ -385,6 +390,16 @@ export default function SearchView({ onSelectStudent, setActiveTab, showToast })
                 {currentStudent.carried_courses_count > 0 ? 'مؤهلة للمساعدة الجامعية' : 'لا توجد مواد محمولة'}
               </div>
             </div>
+
+            {currentStudent.unattempted_courses_count > 0 && (
+              <div className="card" style={{ padding: '18px', background: '#f8fafc' }}>
+                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>مواد لم يتقدم لها</div>
+                <div style={{ fontSize: '26px', fontWeight: 900, color: '#475569', margin: '4px 0' }}>
+                  {currentStudent.unattempted_courses_count}
+                </div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>مقررات بالخطة لم تُقدم بعد</div>
+              </div>
+            )}
 
             <div className="card" style={{ padding: '18px' }}>
               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>أعلى مادة في المسيرة</div>
@@ -551,6 +566,11 @@ export default function SearchView({ onSelectStudent, setActiveTab, showToast })
                         متبقي {yr.carried_count} مواد
                       </span>
                     )}
+                    {yr.unattempted_count > 0 && (
+                      <span className="badge" style={{ fontSize: '12px', fontWeight: 800, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }}>
+                        لم يقدم {yr.unattempted_count} مواد
+                      </span>
+                    )}
                     <div style={{
                       background: '#ffffff',
                       padding: '6px 14px',
@@ -701,6 +721,56 @@ export default function SearchView({ onSelectStudent, setActiveTab, showToast })
                                     مادة متبقية (تحتاج إعادة تقديم)
                                   </span>
                                 )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Unattempted Courses Table */}
+                {yr.unattempted_courses && yr.unattempted_courses.length > 0 && (
+                  <div style={{ padding: '16px 22px', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#475569', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <AlertCircle size={16} color="#64748b" />
+                      <span>المواد غير المتقدم لها بالخطة الدراسية في {yr.year_name} ({yr.unattempted_courses.length})</span>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="table" style={{ width: '100%', textAlign: 'right' }}>
+                        <thead>
+                          <tr>
+                            <th>المادة الدراسية</th>
+                            <th>المحصلة</th>
+                            <th>عدد المحاولات</th>
+                            <th>الدورة الامتحانية</th>
+                            <th>الحالة</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {yr.unattempted_courses.map((u, idx) => (
+                            <tr key={idx}>
+                              <td style={{ fontWeight: 800, color: '#0f172a', fontSize: '14px' }}>
+                                {u.course_name}
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '16px', fontWeight: 900, color: '#64748b' }}>
+                                  0%
+                                </span>
+                              </td>
+                              <td>
+                                <span className="badge" style={{ fontSize: '11px', background: '#e2e8f0', color: '#475569' }}>
+                                  0 محاولات (لم يُسجل)
+                                </span>
+                              </td>
+                              <td style={{ color: '#94a3b8', fontSize: '12px' }}>
+                                -
+                              </td>
+                              <td>
+                                <span className="badge" style={{ fontWeight: 800, background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+                                  مش مقدم المادة
+                                </span>
                               </td>
                             </tr>
                           ))}
