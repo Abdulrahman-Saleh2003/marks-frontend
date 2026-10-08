@@ -444,10 +444,20 @@ body {
     padding: 14px 12px !important;
   }
 
-  .table th, .table td {
-    padding: 8px 8px !important;
-    font-size: 11.5px !important;
-    white-space: nowrap;
+/* --- Sidebar Responsive Enhancements --- */
+@media (max-width: 850px) {
+  .portal-sidebar.sidebar-collapsed {
+    display: none !important;
+  }
+  .portal-sidebar.sidebar-expanded {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    height: 100vh;
+    z-index: 2000;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.2) !important;
   }
 }
+
 

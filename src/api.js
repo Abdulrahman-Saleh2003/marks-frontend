@@ -149,4 +149,30 @@ export const api = {
   sync: {
     triggerGDrive: () => request('/sync/gdrive/trigger/', { method: 'POST' }),
   },
+
+  // Lectures Management
+  lectures: {
+    getTree: (params = {}) => {
+      const p = new URLSearchParams();
+      if (params.year) p.append('year', params.year);
+      if (params.study_year) p.append('study_year', params.study_year);
+      return request(`/lectures/tree/?${p.toString()}`);
+    },
+    getYears: () => request('/lectures/years/'),
+    getSubjects: (params = {}) => {
+      const p = new URLSearchParams();
+      if (params.year) p.append('year', params.year);
+      if (params.study_year) p.append('study_year', params.study_year);
+      return request(`/lectures/subjects/?${p.toString()}`);
+    },
+    getFiles: (params = {}) => {
+      const p = new URLSearchParams();
+      if (params.subject_id) p.append('subject_id', params.subject_id);
+      if (params.year) p.append('year', params.year);
+      if (params.study_year) p.append('study_year', params.study_year);
+      if (params.search) p.append('search', params.search);
+      return request(`/lectures/files/?${p.toString()}`);
+    },
+    syncLectures: () => request('/lectures/sync/', { method: 'POST' }),
+  },
 };

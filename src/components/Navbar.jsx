@@ -9,6 +9,8 @@ import {
   User,
   LogOut,
   Sparkles,
+  BookOpen,
+  Menu
 } from 'lucide-react';
 
 export default function Navbar({
@@ -17,12 +19,14 @@ export default function Navbar({
   user,
   onOpenAuth,
   onLogout,
+  onToggleSidebar,
 }) {
   const tabs = [
     { id: 'home', label: 'الرئيسية', icon: Home },
-    { id: 'search', label: 'البحث والاستكشاف', icon: Search },
-    { id: 'analytics', label: 'مسيرتي والتحليلات', icon: BarChart3 },
+    { id: 'search', label: 'البحث', icon: Search },
+    { id: 'analytics', label: 'التحليلات', icon: BarChart3 },
     { id: 'leaderboards', label: 'لوحة الشرف', icon: Trophy },
+    { id: 'lectures', label: 'المحاضرات', icon: BookOpen },
   ];
 
   return (
@@ -42,16 +46,36 @@ export default function Navbar({
         height: '74px',
         padding: '0 20px'
       }}>
-        {/* Brand */}
-        <div
-          onClick={() => setActiveTab('home')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            cursor: 'pointer'
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <button
+            onClick={onToggleSidebar}
+            title="فتح/إغلاق القائمة الجانبية"
+            style={{
+              background: '#f8fafc',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '8px 10px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#334155',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <Menu size={20} />
+          </button>
+
+          {/* Brand */}
+          <div
+            onClick={() => setActiveTab('home')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              cursor: 'pointer'
+            }}
+          >
           <div style={{
             width: '46px',
             height: '46px',
@@ -85,6 +109,7 @@ export default function Navbar({
             </div>
           </div>
         </div>
+      </div>
 
         {/* Center Nav Tabs or Locked state (Desktop only) */}
         {user ? (

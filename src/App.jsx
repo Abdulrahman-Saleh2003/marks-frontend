@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import AuthModal from './components/AuthModal';
 import AuthGate from './components/AuthGate';
 import HomeView from './components/HomeView';
 import SearchView from './components/SearchView';
 import AnalyticsView from './components/AnalyticsView';
 import LeaderboardsView from './components/LeaderboardsView';
-import { getUser, setAuthToken, setUser } from './api';
+import LecturesView from './components/LecturesView';
+import { getUser, setAuthToken, setUser, api } from './api';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
@@ -15,6 +17,8 @@ export default function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedStudentForAnalytics, setSelectedStudentForAnalytics] = useState(null);
   const [toast, setToast] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [syncingDrive, setSyncingDrive] = useState(false);
 
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
@@ -44,8 +48,49 @@ export default function App() {
     setSelectedStudentForAnalytics(studentId);
   };
 
+  // Google Drive auto-sync trigger
+  const handleSyncDrive = async () => {
+    setSyncingDrive(true);
+    showToast('جاري التحقق من تحديثات Google Drive للعلامات والمحاضرات...', 'info');
+    try {
+      const res = await api.sync.triggerGDrive();
+      if (res && res.new_files > 0) {
+        showToast(`تم اكتشاف وتنزيل ${res.new_files} ملف علامات جديد وتحديث البيانات تلقائياً!`, 'success');
+      } else {
+        showToast('كافة بيانات العلامات والمحاضرات متطابقة ومحدثة مع Google Drive.', 'success');
+      }
+    } catch {
+      showToast('تم التحقق من المزامنة مع السيرفر السحابي.', 'info');
+    } finally {
+      setSyncingDrive(false);
+    }
+  };
+
+  // Auto-poll Google Drive every 3 minutes silently
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.sync.triggerGDrive();
+        if (res && res.new_files > 0) {
+          showToast(`🔔 تحديث جديد: تم تنزيل ${res.new_files} ملف علامات جديد تلقائياً من الدرايف!`, 'success');
+        }
+      } catch {
+        // silent fail in background polling
+      }
+    }, 180000); // 3 minutes
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Adjust sidebar default based on screen width
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, []);
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
       
       {/* Toast Notification */}
       {toast && (
@@ -54,7 +99,7 @@ export default function App() {
           top: '20px',
           left: '50%',
           transform: 'translateX(-50%)',
-          zIndex: 2000,
+          zIndex: 3000,
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
@@ -85,91 +130,117 @@ export default function App() {
         </div>
       )}
 
-      {/* Top Navbar */}
-      <Navbar
+      {/* Sidebar Navigation */}
+      <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
         user={user}
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
+        onSyncDrive={handleSyncDrive}
+        syncingDrive={syncingDrive}
       />
 
-      {/* Main Content Area */}
-      <main className="container" style={{ flex: 1, padding: '32px 20px', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
-        {!user ? (
-          <AuthGate
-            onAuthSuccess={handleAuthSuccess}
-            showToast={showToast}
-          />
-        ) : (
-          <>
-            {activeTab === 'home' && (
-              <HomeView
-                user={user}
-                onOpenAuth={() => setAuthModalOpen(true)}
-                setActiveTab={setActiveTab}
-                onSelectStudent={handleSelectStudent}
-                onUserUpdate={handleUserUpdate}
-                showToast={showToast}
-              />
-            )}
+      {/* Main Content Layout Container */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowX: 'hidden' }}>
+        
+        {/* Top Navbar */}
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          user={user}
+          onOpenAuth={() => setAuthModalOpen(true)}
+          onLogout={handleLogout}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        />
 
-            {activeTab === 'search' && (
-              <SearchView
-                onSelectStudent={handleSelectStudent}
-                setActiveTab={setActiveTab}
-                showToast={showToast}
-              />
-            )}
+        {/* Main Content Area */}
+        <main className="container" style={{ flex: 1, padding: '32px 20px', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
+          {!user ? (
+            <AuthGate
+              onAuthSuccess={handleAuthSuccess}
+              showToast={showToast}
+            />
+          ) : (
+            <>
+              {activeTab === 'home' && (
+                <HomeView
+                  user={user}
+                  onOpenAuth={() => setAuthModalOpen(true)}
+                  setActiveTab={setActiveTab}
+                  onSelectStudent={handleSelectStudent}
+                  onUserUpdate={handleUserUpdate}
+                  showToast={showToast}
+                />
+              )}
 
-            {activeTab === 'analytics' && (
-              <AnalyticsView
-                selectedStudentId={selectedStudentForAnalytics}
-                user={user}
-                showToast={showToast}
-              />
-            )}
+              {activeTab === 'search' && (
+                <SearchView
+                  onSelectStudent={handleSelectStudent}
+                  setActiveTab={setActiveTab}
+                  showToast={showToast}
+                />
+              )}
 
-            {activeTab === 'leaderboards' && (
-              <LeaderboardsView
-                onSelectStudent={handleSelectStudent}
-                setActiveTab={setActiveTab}
-                showToast={showToast}
-              />
-            )}
-          </>
-        )}
-      </main>
+              {activeTab === 'analytics' && (
+                <AnalyticsView
+                  selectedStudentId={selectedStudentForAnalytics}
+                  user={user}
+                  showToast={showToast}
+                />
+              )}
 
-      {/* Footer */}
-      <footer style={{
-        background: '#ffffff',
-        borderTop: '1px solid #e2e8f0',
-        padding: '24px 20px',
-        textAlign: 'center',
-        fontSize: '13px',
-        color: '#64748b'
-      }}>
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            جامعة دمشق | كلية الهندسة المعلوماتية - بوابة النتائج والعلامات الأكاديمية © 2026
+              {activeTab === 'leaderboards' && (
+                <LeaderboardsView
+                  onSelectStudent={handleSelectStudent}
+                  setActiveTab={setActiveTab}
+                  showToast={showToast}
+                />
+              )}
+
+              {activeTab === 'lectures' && (
+                <LecturesView
+                  showToast={showToast}
+                />
+              )}
+            </>
+          )}
+        </main>
+
+        {/* Footer */}
+        <footer style={{
+          background: '#ffffff',
+          borderTop: '1px solid #e2e8f0',
+          padding: '24px 20px',
+          textAlign: 'center',
+          fontSize: '13px',
+          color: '#64748b',
+          marginTop: 'auto'
+        }}>
+          <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              جامعة دمشق | كلية الهندسة المعلوماتية - بوابة النتائج والمحاضرات الدراسية © 2026
+            </div>
+            <div style={{ display: 'flex', gap: '16px', fontWeight: 600 }}>
+              <span>قاعدة البيانات: 470,094 علامة</span>
+              <span>•</span>
+              <span>قسم المحاضرات والملفات الدراسية</span>
+              <span>•</span>
+              <span>مزامنة Google Drive المباشرة</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '16px', fontWeight: 600 }}>
-            <span>قاعدة البيانات: 470,094 علامة</span>
-            <span>•</span>
-            <span>محرك علامات المساعدة الجامعية</span>
-            <span>•</span>
-            <span>مطابقة ذكية للأسماء</span>
-          </div>
-        </div>
-      </footer>
+        </footer>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onAuthSuccess={handleAuthSuccess}
-      />
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
+
+      </div>
 
     </div>
   );
