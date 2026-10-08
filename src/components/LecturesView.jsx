@@ -30,7 +30,7 @@ const STUDY_YEARS = [
 
 export default function LecturesView({ showToast }) {
   const [selectedYearNum, setSelectedYearNum] = useState(1);
-  const [academicYears, setAcademicYears] = useState(['2024-2025', '2023-2024', '2022-2023']);
+  const [academicYears, setAcademicYears] = useState(['2024-2025', '2025-2026']);
   const [selectedAcademicYear, setSelectedAcademicYear] = useState('2024-2025');
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -39,14 +39,32 @@ export default function LecturesView({ showToast }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [syncing, setSyncing] = useState(false);
 
-  // Fallback subjects for immediate display if API is syncing
+  // Fallback subjects matching exact Google Drive structure
   const DEFAULT_SUBJECTS = {
-    1: ['البرمجة 1', 'البرمجة 2', 'التحليل 1', 'التحليل 2', 'الثقافة القومية', 'الجبر الخطي', 'الجبر العام', 'الدارات الكهربائية والالكترونية', 'الفيزياء', 'اللغة العربية', 'انكليزي 1', 'انكليزي 2', 'مبادئ عمل الحاسوب'],
-    2: ['الاتصالات الرقمية', 'الاحتمالات والإحصاء', 'البرمجة 3', 'التحليل 3', 'التحليل العددي', 'الخوارزميات وبنى المعطيات 1', 'الخوارزميات وبنى المعطيات 2', 'الدارات المنطقية', 'انكليزي 3', 'انكليزي 4', 'بنيان الحواسيب 1', 'مهارات التواصل'],
-    3: ['أساسيات الشبكات', 'البيانيات', 'الحسابات العلمية', 'اللغات الصورية', 'بحوث العمليات', 'بنيان الحواسيب 2', 'قواعد المعطيات 1', 'لغات البرمجة', 'مبادئ الذكاء الصنعي', 'مشروع 1'],
-    4: ['البرمجة التفرعية', 'خوارزميات البحث الذكية', 'نظم الوسائط المتعددة', 'نظم تشغيل 1', 'هندسة البرمجيات 1', 'مشروع 2', 'قواعد المعطيات 2', 'المترجمات', 'الشبكات العصبونية', 'برتوكولات الاتصالات'],
-    5: ['أمن الشبكات الحاسوبية', 'التعلم التلقائي', 'الرؤيا الحاسوبية', 'إدارة المشاريع', 'النظم الموزعة', 'مشروع تخرج', 'استكشاف المعرفة', 'هندسة البرمجيات 3']
+    1: ['البرمجة 1', 'التحليل 1', 'الجبر العام', 'برمجة 2', 'تحليل 2', 'جبر خطي', 'دارات كهربائية', 'مبادئ عمل الحاسوب', 'فيزياء'],
+    2: ['الاتصالات الرقمية', 'الاحتمالات و الإحصاء', 'البرمجة 3', 'التحليل 3', 'التحليل العددي', 'الخوارزميات 1', 'الخوارزميات و بنى المعطيات 2', 'الدارات المنطقية', 'بنيان الحواسيب 1', 'انكليزي 3', 'اللغة الإنكليزية 4'],
+    3: ['أساسيات الشبكات', 'بيانيات حاسوبية', 'بحوث العمليات', 'بنيان الحواسيب 2', 'قواعد معطيات 1', 'لغات البرمجة', 'لغات صورية', 'مبادئ ذكاء صنعي', 'اوتومات'],
+    4: ['البرمجة التفرعية', 'خوارزميات البحث الذكية', 'نظم التشغيل 1', 'نظم الوسائط المتعددة', 'هندسة البرمجيات 1', 'هندسة البرمجيات 2', 'قواعد المعطيات 2', 'المترجمات 1', 'الشبكات العصبونية', 'بروتوكولات الإتصال', 'تطبيقات شبكية', 'الحقائق الافتراضية'],
+    5: ['برمجيات', 'ذكاء', 'مشترك']
   };
+
+  useEffect(() => {
+    const loadAcademicYears = async () => {
+      try {
+        const res = await api.lectures.getYears();
+        if (res && res.academic_years && res.academic_years.length > 0) {
+          const labels = res.academic_years.map((y) => y.year_label);
+          setAcademicYears(labels);
+          if (!labels.includes(selectedAcademicYear)) {
+            setSelectedAcademicYear(labels[0]);
+          }
+        }
+      } catch {
+        // Keep default years
+      }
+    };
+    loadAcademicYears();
+  }, []);
 
   useEffect(() => {
     fetchLecturesData();
@@ -62,7 +80,7 @@ export default function LecturesView({ showToast }) {
       if (res && res.subjects && res.subjects.length > 0) {
         setSubjects(res.subjects);
         setSelectedSubject(res.subjects[0]);
-        fetchSubjectLectures(res.subjects[0].subject_name);
+        fetchSubjectLectures(res.subjects[0]);
       } else {
         // Fallback default subjects
         const fallback = (DEFAULT_SUBJECTS[selectedYearNum] || []).map((name, idx) => ({
@@ -73,9 +91,9 @@ export default function LecturesView({ showToast }) {
         }));
         setSubjects(fallback);
         setSelectedSubject(fallback[0]);
-        fetchSubjectLectures(fallback[0].subject_name);
+        fetchSubjectLectures(fallback[0]);
       }
-    } catch (e) {
+    } catch {
       const fallback = (DEFAULT_SUBJECTS[selectedYearNum] || []).map((name, idx) => ({
         id: idx + 1,
         subject_name: name,
@@ -84,21 +102,41 @@ export default function LecturesView({ showToast }) {
       }));
       setSubjects(fallback);
       setSelectedSubject(fallback[0]);
+      fetchSubjectLectures(fallback[0]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSubjectLectures = async (subjName) => {
+  const fetchSubjectLectures = async (subjObjOrName) => {
+    if (!subjObjOrName) return;
     try {
-      const res = await api.lectures.getFiles({
+      const isObj = typeof subjObjOrName === 'object' && subjObjOrName !== null;
+      const subjId = isObj ? subjObjOrName.id : null;
+      const subjName = isObj ? subjObjOrName.subject_name : subjObjOrName;
+
+      const params = {
         study_year: selectedYearNum,
         year: selectedAcademicYear,
-        search: subjName
-      });
+      };
+      if (subjId) params.subject_id = subjId;
+      if (subjName) {
+        params.subject_name = subjName;
+        params.search = subjName;
+      }
+
+      const res = await api.lectures.getFiles(params);
       if (res && res.lectures && res.lectures.length > 0) {
         setLectures(res.lectures);
       } else {
+        // Try without search/subject_name filter using subject_id only
+        if (subjId) {
+          const resId = await api.lectures.getFiles({ subject_id: subjId });
+          if (resId && resId.lectures && resId.lectures.length > 0) {
+            setLectures(resId.lectures);
+            return;
+          }
+        }
         // Generate mock lecture dates for demonstration if none
         setLectures([
           { id: 1, title: `محاضرة 1 - مقدمة ومفاهيم أساسية في ${subjName}`, date_uploaded: '2024-11-15', file_type: 'pdf', drive_view_url: 'https://drive.google.com/folderview?id=0BwGBqPXoFMyUcEo4bTRrZzVKVDg&resourcekey=0-m7_x4KXX8ab9SF2gvt6IdA' },
@@ -402,7 +440,7 @@ export default function LecturesView({ showToast }) {
                     key={subj.subject_name}
                     onClick={() => {
                       setSelectedSubject(subj);
-                      fetchSubjectLectures(subj.subject_name);
+                      fetchSubjectLectures(subj);
                     }}
                     style={{
                       display: 'flex',
