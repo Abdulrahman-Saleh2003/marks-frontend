@@ -5,13 +5,21 @@ import {
   Phone,
   Lock,
   User,
-  Mail,
-  KeyRound,
-  CheckCircle2,
+  Eye,
+  EyeOff,
   AlertCircle,
+  CheckCircle2,
   Loader2,
   Sparkles,
+  KeyRound,
+  GraduationCap
 } from 'lucide-react';
+import {
+  sanitizePhoneNumber,
+  validatePhoneNumber,
+  sanitizeFullName,
+  validateFullName
+} from './AuthGate';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot_step1' | 'forgot_step2'
@@ -22,39 +30,68 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   // Form fields
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
+  // Password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
   if (!isOpen) return null;
 
-  const resetForm = () => {
+  const resetMessages = () => {
     setError('');
     setSuccessMsg('');
-    setLoading(false);
+  };
+
+  const handlePhoneChange = (e) => {
+    const sanitized = sanitizePhoneNumber(e.target.value);
+    setPhone(sanitized);
+    if (error) setError('');
+  };
+
+  const handleNameChange = (e) => {
+    const sanitized = sanitizeFullName(e.target.value);
+    setFullName(sanitized);
+    if (error) setError('');
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
+    resetMessages();
+
+    const phoneValidation = validatePhoneNumber(phone);
+    if (!phoneValidation.isValid) {
+      setError(phoneValidation.message);
+      return;
+    }
+
+    if (!password) {
+      setError('يرجى إدخال كلمة المرور.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.auth.login(phone, password);
+      const res = await api.auth.login(phoneValidation.cleaned, password);
       const token = res.access || res.access_token;
       const u = res.user || {
         id: res.user_id || res.id,
         full_name: res.full_name,
-        phone_number: res.phone_number || phone,
+        phone_number: res.phone_number || phoneValidation.cleaned,
         email: res.email,
         linked_student_id: res.linked_student_id || null
       };
+
       setAuthToken(token);
       setUser(u);
       onAuthSuccess(u);
       onClose();
     } catch (err) {
-      setError(err.message || 'فشل تسجيل الدخول. يرجى التحقق من رقم الهاتف وكلمة المرور.');
+      setError(err.message || 'فشل تسجيل الدخول. يرجى التأكد من رقم الهاتف وكلمة المرور.');
     } finally {
       setLoading(false);
     }
@@ -62,82 +99,81 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError('');
+    resetMessages();
+
+    const nameValidation = validateFullName(fullName);
+    if (!nameValidation.isValid) {
+      setError(nameValidation.message);
+      return;
+    }
+
+    const phoneValidation = validatePhoneNumber(phone);
+    if (!phoneValidation.isValid) {
+      setError(phoneValidation.message);
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setError('يجب ألا تقل كلمة المرور عن 6 محارف.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('كلمة المرور وتأكيدها غير متطابقين.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.auth.register(phone, fullName, password, email);
+      const res = await api.auth.register(
+        phoneValidation.cleaned,
+        nameValidation.cleaned,
+        password,
+        null
+      );
       const token = res.access || res.access_token;
       const u = res.user || {
         id: res.user_id || res.id,
-        full_name: res.full_name || fullName,
-        phone_number: res.phone_number || phone,
-        email: res.email || email,
+        full_name: res.full_name || nameValidation.cleaned,
+        phone_number: res.phone_number || phoneValidation.cleaned,
+        email: res.email || null,
         linked_student_id: res.linked_student_id || null
       };
+
       setAuthToken(token);
       setUser(u);
       onAuthSuccess(u);
       onClose();
     } catch (err) {
-      setError(err.message || 'فشل إنشاء الحساب. تأكد من إدخال البيانات بشكل صحيح.');
+      setError(err.message || 'فشل إنشاء الحساب. تأكد من أن رقم الهاتف غير مسجل مسبقاً.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleForgotStep1 = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const res = await api.auth.forgotPassword(phone || email);
-      setSuccessMsg(res.message || 'تم إرسال رمز التحقق (OTP) إلى بريدك الإلكتروني بنجاح!');
-      setMode('forgot_step2');
-    } catch (err) {
-      setError(err.message || 'لم يتم العثور على حساب مرتبط بهذا الرقم أو البريد.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleForgotStep2 = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const res = await api.auth.resetPassword(phone, otpCode, newPassword);
-      setSuccessMsg(res.message || 'تم تعيين كلمة المرور الجديدة بنجاح! يمكنك الآن تسجيل الدخول.');
-      setTimeout(() => {
-        setMode('login');
-        resetForm();
-      }, 2000);
-    } catch (err) {
-      setError(err.message || 'رمز التحقق غير صحيح أو انتهت صلاحيته.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isSyrianPhoneValid = phone.startsWith('09') && phone.length === 10;
 
   return (
     <div style={{
       position: 'fixed',
       inset: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.65)',
-      backdropFilter: 'blur(8px)',
+      background: 'rgba(15, 23, 42, 0.65)',
+      backdropFilter: 'blur(6px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
-      padding: '20px'
+      zIndex: 2000,
+      padding: '16px'
     }}>
-      <div className="card animate-fade" style={{
+      <div style={{
         width: '100%',
-        maxWidth: '460px',
-        padding: '32px',
-        position: 'relative',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        borderRadius: '24px',
+        maxWidth: '430px',
         background: '#ffffff',
+        borderRadius: '24px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        padding: '32px 28px',
+        position: 'relative'
       }}>
         {/* Close Button */}
         <button
@@ -149,48 +185,45 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             background: '#f1f5f9',
             border: 'none',
             borderRadius: '50%',
-            width: '36px',
-            height: '36px',
+            width: '32px',
+            height: '32px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            color: '#64748b'
+            color: '#64748b',
+            transition: 'all 0.2s ease'
           }}
         >
-          <X size={18} />
+          <X size={17} />
         </button>
 
-        {/* Modal Header */}
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
           <div style={{
-            width: '54px',
-            height: '54px',
-            borderRadius: '16px',
-            background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
             display: 'inline-flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            color: '#ffffff',
-            marginBottom: '12px',
-            boxShadow: '0 8px 16px rgba(79, 70, 229, 0.25)'
+            gap: '6px',
+            background: '#eef2ff',
+            color: '#4338ca',
+            padding: '4px 12px',
+            borderRadius: '20px',
+            fontSize: '11.5px',
+            fontWeight: 800,
+            marginBottom: '6px'
           }}>
-            <Sparkles size={28} />
+            <GraduationCap size={14} />
+            <span>جامعة دمشق • كلية الهندسة المعلوماتية</span>
           </div>
-          <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>
-            {mode === 'login' && 'تسجيل الدخول'}
-            {mode === 'register' && 'إنشاء حساب جديد'}
-            {(mode === 'forgot_step1' || mode === 'forgot_step2') && 'استعادة كلمة المرور'}
-          </h2>
-          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
-            {mode === 'login' && 'مرحباً بك مجدداً في بوابة نتائج كلية الهندسة المعلوماتية'}
-            {mode === 'register' && 'سجّل الآن لتصل إلى مسيرتك الأكاديمية والمطابقة الذكية'}
-            {mode === 'forgot_step1' && 'أدخل رقم هاتفك أو بريدك المسجل لإرسال رمز OTP'}
-            {mode === 'forgot_step2' && 'أدخل رمز التحقق المكون من 6 أرقام مع كلمة المرور الجديدة'}
+          <h3 style={{ fontSize: '19px', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0' }}>
+            {mode === 'register' ? 'إنشاء حساب جديد' : 'تسجيل الدخول'}
+          </h3>
+          <p style={{ fontSize: '12.5px', color: '#64748b', margin: 0 }}>
+            {mode === 'register' ? 'أدخل اسمك ورقم هاتفك لإنشاء الحساب' : 'أدخل رقم هاتفك وكلمة المرور'}
           </p>
         </div>
 
-        {/* Switch Mode Tabs (Only for login / register) */}
+        {/* Tabs */}
         {(mode === 'login' || mode === 'register') && (
           <div style={{
             display: 'flex',
@@ -200,39 +233,37 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             marginBottom: '20px'
           }}>
             <button
-              onClick={() => { setMode('login'); resetForm(); }}
+              type="button"
+              onClick={() => { setMode('login'); resetMessages(); }}
               style={{
                 flex: 1,
                 padding: '9px',
                 border: 'none',
                 borderRadius: '9px',
-                fontWeight: 700,
-                fontSize: '13.5px',
-                fontFamily: 'var(--font-arabic)',
+                fontWeight: 800,
+                fontSize: '13px',
                 cursor: 'pointer',
                 background: mode === 'login' ? '#ffffff' : 'transparent',
-                color: mode === 'login' ? '#4f46e5' : '#64748b',
-                boxShadow: mode === 'login' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.2s'
+                color: mode === 'login' ? '#4338ca' : '#64748b',
+                boxShadow: mode === 'login' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
               }}
             >
               تسجيل الدخول
             </button>
             <button
-              onClick={() => { setMode('register'); resetForm(); }}
+              type="button"
+              onClick={() => { setMode('register'); resetMessages(); }}
               style={{
                 flex: 1,
                 padding: '9px',
                 border: 'none',
                 borderRadius: '9px',
-                fontWeight: 700,
-                fontSize: '13.5px',
-                fontFamily: 'var(--font-arabic)',
+                fontWeight: 800,
+                fontSize: '13px',
                 cursor: 'pointer',
                 background: mode === 'register' ? '#ffffff' : 'transparent',
-                color: mode === 'register' ? '#4f46e5' : '#64748b',
-                boxShadow: mode === 'register' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.2s'
+                color: mode === 'register' ? '#4338ca' : '#64748b',
+                boxShadow: mode === 'register' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
               }}
             >
               حساب جديد
@@ -240,7 +271,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </div>
         )}
 
-        {/* Notifications */}
+        {/* Error message */}
         {error && (
           <div style={{
             display: 'flex',
@@ -249,283 +280,237 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             background: '#fef2f2',
             border: '1px solid #fecaca',
             color: '#b91c1c',
-            padding: '10px 14px',
-            borderRadius: '12px',
+            padding: '10px 12px',
+            borderRadius: '10px',
             fontSize: '12.5px',
+            fontWeight: 700,
             marginBottom: '16px'
           }}>
-            <AlertCircle size={16} />
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
 
-        {successMsg && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: '#ecfdf5',
-            border: '1px solid #a7f3d0',
-            color: '#047857',
-            padding: '10px 14px',
-            borderRadius: '12px',
-            fontSize: '12.5px',
-            marginBottom: '16px'
-          }}>
-            <CheckCircle2 size={16} />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {/* 1. Login Form */}
+        {/* Form Body */}
         {mode === 'login' && (
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                رقم الهاتف (مثل: 0912345678)
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 800, color: '#334155', marginBottom: '5px' }}>
+                رقم الهاتف المحمول *
               </label>
               <div style={{ position: 'relative' }}>
+                <Phone size={17} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input
-                  type="text"
+                  type="tel"
                   required
-                  placeholder="09xxxxxxxx"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="input-field"
-                  style={{ paddingRight: '40px' }}
+                  onChange={handlePhoneChange}
+                  placeholder="0938135338"
+                  maxLength={15}
+                  dir="ltr"
+                  style={{
+                    width: '100%',
+                    padding: '11px 38px 11px 12px',
+                    borderRadius: '10px',
+                    border: `1.5px solid ${isSyrianPhoneValid ? '#10b981' : '#cbd5e1'}`,
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    textAlign: 'right',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
                 />
-                <Phone size={17} style={{ position: 'absolute', top: '13px', right: '14px', color: '#94a3b8' }} />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                كلمة المرور
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 800, color: '#334155', marginBottom: '5px' }}>
+                كلمة المرور *
               </label>
               <div style={{ position: 'relative' }}>
+                <Lock size={17} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field"
-                  style={{ paddingRight: '40px' }}
+                  placeholder="••••••••"
+                  style={{
+                    width: '100%',
+                    padding: '11px 38px 11px 38px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
                 />
-                <Lock size={17} style={{ position: 'absolute', top: '13px', right: '14px', color: '#94a3b8' }} />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    left: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-            </div>
-
-            <div style={{ textAlign: 'left' }}>
-              <button
-                type="button"
-                onClick={() => { setMode('forgot_step1'); resetForm(); }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#4f46e5',
-                  fontSize: '12.5px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-arabic)'
-                }}
-              >
-                نسيت كلمة المرور؟
-              </button>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary"
-              style={{ width: '100%', marginTop: '6px', padding: '12px' }}
+              style={{
+                marginTop: '4px',
+                background: 'linear-gradient(135deg, #4338ca 0%, #3730a3 100%)',
+                color: '#ffffff',
+                padding: '12px',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: 800,
+                border: 'none',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
             >
-              {loading ? <Loader2 size={18} className="spin" /> : 'دخول إلى البوابة'}
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Lock size={15} />}
+              <span>{loading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول'}</span>
             </button>
           </form>
         )}
 
-        {/* 2. Register Form */}
         {mode === 'register' && (
           <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                الاسم الثلاثي للطالب (كما في السجلات الجامعية)
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 800, color: '#334155', marginBottom: '5px' }}>
+                الاسم الكامل (الاسم والكنية) *
               </label>
               <div style={{ position: 'relative' }}>
+                <User size={17} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input
                   type="text"
                   required
-                  placeholder="محمد أحمد علي"
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="input-field"
-                  style={{ paddingRight: '40px' }}
+                  onChange={handleNameChange}
+                  placeholder="مثال: أحمد المحمد"
+                  style={{
+                    width: '100%',
+                    padding: '11px 38px 11px 12px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
                 />
-                <User size={17} style={{ position: 'absolute', top: '13px', right: '14px', color: '#94a3b8' }} />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                رقم الهاتف
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 800, color: '#334155', marginBottom: '5px' }}>
+                رقم الهاتف المحمول *
               </label>
               <div style={{ position: 'relative' }}>
+                <Phone size={17} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input
-                  type="text"
+                  type="tel"
                   required
-                  placeholder="09xxxxxxxx"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="input-field"
-                  style={{ paddingRight: '40px' }}
+                  onChange={handlePhoneChange}
+                  placeholder="0938135338"
+                  maxLength={15}
+                  dir="ltr"
+                  style={{
+                    width: '100%',
+                    padding: '11px 38px 11px 12px',
+                    borderRadius: '10px',
+                    border: `1.5px solid ${isSyrianPhoneValid ? '#10b981' : '#cbd5e1'}`,
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    textAlign: 'right',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
                 />
-                <Phone size={17} style={{ position: 'absolute', top: '13px', right: '14px', color: '#94a3b8' }} />
               </div>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                البريد الإلكتروني (لتلقي إشعارات واستعادة الحساب)
-              </label>
-              <div style={{ position: 'relative' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 800, color: '#334155', marginBottom: '5px' }}>
+                  كلمة المرور *
+                </label>
                 <input
-                  type="email"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="student@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field"
-                  style={{ paddingRight: '40px' }}
-                />
-                <Mail size={17} style={{ position: 'absolute', top: '13px', right: '14px', color: '#94a3b8' }} />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                كلمة المرور
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field"
-                  style={{ paddingRight: '40px' }}
+                  placeholder="••••••"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
                 />
-                <Lock size={17} style={{ position: 'absolute', top: '13px', right: '14px', color: '#94a3b8' }} />
               </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary"
-              style={{ width: '100%', marginTop: '8px', padding: '12px' }}
-            >
-              {loading ? <Loader2 size={18} className="spin" /> : 'إنشاء الحساب والمطابقة الذكية'}
-            </button>
-          </form>
-        )}
-
-        {/* 3. Forgot Password Step 1 */}
-        {mode === 'forgot_step1' && (
-          <form onSubmit={handleForgotStep1} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                رقم الهاتف أو البريد الإلكتروني
-              </label>
-              <div style={{ position: 'relative' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 800, color: '#334155', marginBottom: '5px' }}>
+                  تأكيد الكلمة *
+                </label>
                 <input
-                  type="text"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   required
-                  placeholder="09xxxxxxxx أو your@gmail.com"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="input-field"
-                  style={{ paddingRight: '40px' }}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    border: `1.5px solid ${confirmPassword && confirmPassword === password ? '#10b981' : '#cbd5e1'}`,
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
                 />
-                <Phone size={17} style={{ position: 'absolute', top: '13px', right: '14px', color: '#94a3b8' }} />
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary"
-              style={{ width: '100%', padding: '12px' }}
-            >
-              {loading ? <Loader2 size={18} className="spin" /> : 'إرسال رمز التحقق OTP'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setMode('login'); resetForm(); }}
               style={{
-                background: 'none',
+                marginTop: '4px',
+                background: 'linear-gradient(135deg, #4338ca 0%, #3730a3 100%)',
+                color: '#ffffff',
+                padding: '12px',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: 800,
                 border: 'none',
-                color: '#64748b',
-                fontSize: '13px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'var(--font-arabic)'
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
               }}
             >
-              العودة لتسجيل الدخول
-            </button>
-          </form>
-        )}
-
-        {/* 4. Forgot Password Step 2 (Enter OTP + New Password) */}
-        {mode === 'forgot_step2' && (
-          <form onSubmit={handleForgotStep2} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                رمز التحقق (OTP) المرسل إلى بريدك (6 أرقام)
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  placeholder="123456"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  className="input-field"
-                  style={{ paddingRight: '40px', letterSpacing: '4px', textAlign: 'center', fontSize: '18px', fontWeight: 800 }}
-                />
-                <KeyRound size={17} style={{ position: 'absolute', top: '13px', right: '14px', color: '#94a3b8' }} />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                كلمة المرور الجديدة
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="input-field"
-                  style={{ paddingRight: '40px' }}
-                />
-                <Lock size={17} style={{ position: 'absolute', top: '13px', right: '14px', color: '#94a3b8' }} />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary"
-              style={{ width: '100%', padding: '12px' }}
-            >
-              {loading ? <Loader2 size={18} className="spin" /> : 'تحديث كلمة المرور والدخول'}
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={15} />}
+              <span>{loading ? 'جارٍ الإنشاء...' : 'إنشاء الحساب والدخول'}</span>
             </button>
           </form>
         )}
