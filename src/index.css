@@ -443,6 +443,7 @@ body {
   .card {
     padding: 14px 12px !important;
   }
+}
 
 /* --- Sidebar Responsive Enhancements --- */
 @media (max-width: 850px) {
@@ -459,5 +460,22 @@ body {
     box-shadow: -8px 0 30px rgba(0, 0, 0, 0.2) !important;
   }
 }
+
+/* --- Responsive Lectures Layout --- */
+.lectures-grid-container {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .lectures-grid-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
 
 

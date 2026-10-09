@@ -8,8 +8,9 @@ import SearchView from './components/SearchView';
 import AnalyticsView from './components/AnalyticsView';
 import LeaderboardsView from './components/LeaderboardsView';
 import LecturesView from './components/LecturesView';
+import MaintenanceView from './components/MaintenanceView';
 import { getUser, setAuthToken, setUser, api } from './api';
-import { CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X, Menu } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -205,9 +206,61 @@ export default function App() {
                   showToast={showToast}
                 />
               )}
+
+              {activeTab === 'past_exams' && (
+                <MaintenanceView
+                  type="past_exams"
+                  setActiveTab={setActiveTab}
+                />
+              )}
+
+              {activeTab === 'grading_keys' && (
+                <MaintenanceView
+                  type="grading_keys"
+                  setActiveTab={setActiveTab}
+                />
+              )}
+
+              {activeTab === 'summaries' && (
+                <MaintenanceView
+                  type="summaries"
+                  setActiveTab={setActiveTab}
+                />
+              )}
             </>
           )}
         </main>
+
+        {/* Floating Sidebar Re-open Button (visible when sidebar is closed) */}
+        {!sidebarOpen && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            title="إظهار القائمة الجانبية"
+            style={{
+              position: 'fixed',
+              bottom: '80px',
+              right: '18px',
+              zIndex: 1020,
+              background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '50px',
+              padding: '10px 18px',
+              fontWeight: 800,
+              fontSize: '13px',
+              boxShadow: '0 8px 24px rgba(79, 70, 229, 0.45)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease'
+            }}
+            className="animate-fade"
+          >
+            <Menu size={18} />
+            <span>إظهار القائمة</span>
+          </button>
+        )}
 
         {/* Footer */}
         <footer style={{

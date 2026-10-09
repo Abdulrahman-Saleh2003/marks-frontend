@@ -65,6 +65,30 @@ export default function Sidebar({
       icon: BookOpen,
       color: '#8b5cf6',
       badge: 'جديد'
+    },
+    {
+      id: 'past_exams',
+      label: 'قسم الدورات',
+      description: 'أسئلة الدورات والامتحانات السابقة',
+      icon: FileCheck2,
+      color: '#ef4444',
+      badge: 'صيانة 🛠️'
+    },
+    {
+      id: 'grading_keys',
+      label: 'سلالم التصحيح',
+      description: 'سلالم التصحيح الرسمية والحلول النموذجية',
+      icon: CheckCircle2,
+      color: '#0284c7',
+      badge: 'صيانة 🛠️'
+    },
+    {
+      id: 'summaries',
+      label: 'ملخص فهم المحاضرات',
+      description: 'ملخصات وشروحات مكثفة لفهم المنهاج',
+      icon: Sparkles,
+      color: '#10b981',
+      badge: 'صيانة 🛠️'
     }
   ];
 
@@ -147,26 +171,54 @@ export default function Sidebar({
             )}
           </div>
 
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            title={isOpen ? 'طي القائمة' : 'توسيع القائمة'}
-            style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0',
-              background: '#ffffff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#64748b',
-              flexShrink: 0,
-              transition: 'all 0.2s ease'
-            }}
-          >
-            {isOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Mobile Close Button */}
+            {isOpen && (
+              <button
+                onClick={() => setIsOpen(false)}
+                className="hide-on-desktop"
+                title="إغلاق القائمة"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '9px',
+                  border: '1px solid #fee2e2',
+                  background: '#fef2f2',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#dc2626',
+                  flexShrink: 0
+                }}
+              >
+                <X size={18} />
+              </button>
+            )}
+
+            {/* Collapse / Expand Toggle Button */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              title={isOpen ? 'إخفاء / طي القائمة الجانبية' : 'إظهار / توسيع القائمة الجانبية'}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '9px',
+                border: '1px solid #e2e8f0',
+                background: '#ffffff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#475569',
+                flexShrink: 0,
+                transition: 'all 0.2s ease',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+              }}
+            >
+              {isOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
+          </div>
         </div>
 
         {/* Navigation Items */}

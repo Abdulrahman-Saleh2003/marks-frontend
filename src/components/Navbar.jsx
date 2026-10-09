@@ -10,7 +10,9 @@ import {
   LogOut,
   Sparkles,
   BookOpen,
-  Menu
+  Menu,
+  FileCheck2,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function Navbar({
@@ -27,6 +29,9 @@ export default function Navbar({
     { id: 'analytics', label: 'التحليلات', icon: BarChart3 },
     { id: 'leaderboards', label: 'لوحة الشرف', icon: Trophy },
     { id: 'lectures', label: 'المحاضرات', icon: BookOpen },
+    { id: 'past_exams', label: 'الدورات 🛠️', icon: FileCheck2 },
+    { id: 'grading_keys', label: 'السلالم 🛠️', icon: CheckCircle2 },
+    { id: 'summaries', label: 'الملخصات 🛠️', icon: Sparkles },
   ];
 
   return (
@@ -49,21 +54,25 @@ export default function Navbar({
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <button
             onClick={onToggleSidebar}
-            title="فتح/إغلاق القائمة الجانبية"
+            title="إظهار / إخفاء القائمة الجانبية"
             style={{
               background: '#f8fafc',
-              border: '1.5px solid #e2e8f0',
+              border: '1.5px solid #cbd5e1',
               borderRadius: '12px',
-              padding: '8px 10px',
+              padding: '8px 12px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: '6px',
               color: '#334155',
-              transition: 'all 0.2s ease'
+              fontWeight: 800,
+              fontSize: '13px',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
             }}
           >
             <Menu size={20} />
+            <span className="hide-on-mobile">القائمة الجانبية</span>
           </button>
 
           {/* Brand */}
