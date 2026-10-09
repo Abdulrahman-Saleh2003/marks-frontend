@@ -9,6 +9,7 @@ import AnalyticsView from './components/AnalyticsView';
 import LeaderboardsView from './components/LeaderboardsView';
 import LecturesView from './components/LecturesView';
 import MaintenanceView from './components/MaintenanceView';
+import ContactView from './components/ContactView';
 import { getUser, setAuthToken, setUser, api } from './api';
 import { CheckCircle2, AlertCircle, X, Menu } from 'lucide-react';
 
@@ -159,7 +160,11 @@ export default function App() {
 
         {/* Main Content Area */}
         <main className="container" style={{ flex: 1, padding: '32px 20px', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
-          {!user ? (
+          {activeTab === 'contact' ? (
+            <ContactView
+              showToast={showToast}
+            />
+          ) : !user ? (
             <AuthGate
               onAuthSuccess={handleAuthSuccess}
               showToast={showToast}
@@ -276,12 +281,30 @@ export default function App() {
             <div>
               جامعة دمشق | كلية الهندسة المعلوماتية - بوابة النتائج والمحاضرات الدراسية © 2026
             </div>
-            <div style={{ display: 'flex', gap: '16px', fontWeight: 600 }}>
+            <div style={{ display: 'flex', gap: '16px', fontWeight: 600, alignItems: 'center', flexWrap: 'wrap' }}>
               <span>قاعدة البيانات: 470,094 علامة</span>
               <span>•</span>
-              <span>قسم المحاضرات والملفات الدراسية</span>
+              <span>قسم المحاضرات والملفات</span>
               <span>•</span>
-              <span>مزامنة Google Drive المباشرة</span>
+              <button
+                onClick={() => setActiveTab('contact')}
+                style={{
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  color: '#16a34a',
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  fontFamily: 'inherit',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <span>💬 تواصل مع المطور (واتساب)</span>
+              </button>
             </div>
           </div>
         </footer>

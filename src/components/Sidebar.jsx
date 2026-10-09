@@ -15,7 +15,8 @@ import {
   CloudCheck,
   CheckCircle2,
   FileCheck2,
-  X
+  X,
+  MessageCircle
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -89,6 +90,14 @@ export default function Sidebar({
       icon: Sparkles,
       color: '#10b981',
       badge: 'صيانة 🛠️'
+    },
+    {
+      id: 'contact',
+      label: 'تواصل معنا',
+      description: 'مطور المنصة، الواتساب والاقتراحات',
+      icon: MessageCircle,
+      color: '#16a34a',
+      badge: 'واتساب'
     }
   ];
 

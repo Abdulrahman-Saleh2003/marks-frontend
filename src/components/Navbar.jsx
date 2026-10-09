@@ -12,7 +12,8 @@ import {
   BookOpen,
   Menu,
   FileCheck2,
-  CheckCircle2
+  CheckCircle2,
+  MessageCircle
 } from 'lucide-react';
 
 export default function Navbar({
@@ -32,6 +33,7 @@ export default function Navbar({
     { id: 'past_exams', label: 'الدورات 🛠️', icon: FileCheck2 },
     { id: 'grading_keys', label: 'السلالم 🛠️', icon: CheckCircle2 },
     { id: 'summaries', label: 'الملخصات 🛠️', icon: Sparkles },
+    { id: 'contact', label: 'تواصل معنا', icon: MessageCircle },
   ];
 
   return (
